@@ -1,0 +1,10 @@
+[package]
+name = "Cole_Ragans_Proj"
+version = "0.1.0"
+edition = "2021"
+
+# Dependencies section should be declared only once and can list multiple packages
+[dependencies]
+polars = { version = "0.27", features = ["lazy", "csv-file"] }
+
+
