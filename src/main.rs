@@ -2,8 +2,6 @@ use polars::prelude::*;
 use std::error::Error;
 use std::collections::HashMap;
 use petgraph::graph::DiGraph;
-use std::collections::HashSet;
-
 
 fn main() -> Result<(), Box<dyn Error>> {
     let file_path = r"C:\Users\aasmi\Downloads\ColeRagans2024.csv";
@@ -52,32 +50,36 @@ fn main() -> Result<(), Box<dyn Error>> {
     );
 
     let mut df = swing_related_lf.collect()?;  // Collecting data into DataFrame
+
     println!("Filtered swing-related pitches DataFrame:\n{:?}", df);
 
-    df.as_single_chunk_par();
-    let mut iters = df.columns(["pitch_type", "stand"])?.iter().map(|s| s.iter()).collect::<Vec<_>>();
-
+    df.as_single_chunk_par(); // Ensure data is in one chunk for efficient access
     let mut graph = DiGraph::<String, f32>::new();
     let mut node_indices = HashMap::new();
-    let mut unique_combinations = HashSet::new(); // This ensures each combination is added only once
 
-    
-    for _ in 0..df.height() {
-        let pitch_type_value = iters[0].next().unwrap();
-        let pitch_type = pitch_type_value.get_str().unwrap();
-        let stand_value = iters[1].next().unwrap();
-        let stand = stand_value.get_str().unwrap();
+    let pitch_types = df.column("pitch_type")?.utf8()?;
+    let stands = df.column("stand")?.utf8()?;
+    let descriptions = df.column("description")?.utf8()?;
 
-        // Create a unique key for each combination of pitch type and batter stance
+    for i in 0..df.height() {
+        let pitch_type = pitch_types.get(i).unwrap();
+        let stand = stands.get(i).unwrap();
+        let description = descriptions.get(i).unwrap();
+
         let combination_key = format!("Pitch: {} - Batter: {}", pitch_type, stand);
 
-        // Add the combination as a node if it hasn't been added yet
-        if unique_combinations.insert(combination_key.clone()) {
-            node_indices.entry(combination_key.clone()).or_insert_with(|| {
-                let node = graph.add_node(combination_key.clone());
-                println!("Node added: {}", combination_key);  // Print when a node is added
-                node
-            });
+        let node_index = *node_indices.entry(combination_key.clone())
+            .or_insert_with(|| graph.add_node(combination_key.clone()));
+
+        let weight = match description {
+            "swinging_strike" | "swinging_strike_blocked" => 3.0,
+            _ => 1.0,
+        };
+
+        for (target_key, &target_index) in &node_indices {
+            if node_index != target_index {
+                graph.add_edge(node_index, target_index, weight);
+            }
         }
     }
 
@@ -85,6 +87,3 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
-    
-
-
