@@ -1,3 +1,5 @@
+WRITEUP 
+
 
 How Does Cole Ragans Generate Swing and Misses?
 
