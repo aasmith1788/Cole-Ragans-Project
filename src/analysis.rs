@@ -64,7 +64,7 @@ pub fn analyze_data(df: DataFrame) -> Result<(), Box<dyn Error>> {
     // Collect and sort nodes with at least 20 edges (individual pitches) by their success rate
     let mut sorted_nodes: Vec<(String, f32)> = total_counts.iter()
         .filter_map(|(node_index, &count)| {
-            if count >= 20 {
+            if count >= 10 {
                 total_weights.get(node_index).map(|&weight_sum| {
                     let success_rate = weight_sum / count as f32;
                     (graph[*node_index].clone(), success_rate)
@@ -87,3 +87,4 @@ pub fn analyze_data(df: DataFrame) -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+
